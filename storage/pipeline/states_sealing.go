@@ -57,7 +57,14 @@ func (m *Sealing) cleanupAssignedDeals(sector SectorInfo) {
 
 func (m *Sealing) handlePacking(ctx statemachine.Context, sector SectorInfo) error {
 	m.cleanupAssignedDeals(sector)
-
+	if m.recoverDCMode{
+		log.Infof("recover DC mode, sector:%d, reuse ticket value:%v, ticket epoch:%d", sector.SectorNumber, sector.TicketValue, sector.TicketEpoch)
+		return ctx.Send(SectorTicket{
+			TicketValue: sector.TicketValue,
+			TicketEpoch: sector.TicketEpoch,
+		})
+	}
+	
 	// if this is a snapdeals sector, but it ended up not having any deals, abort the upgrade
 	if sector.State == SnapDealsPacking && !sector.hasDeals() {
 		return ctx.Send(SectorAbortUpgrade{xerrors.New("sector had no deals")})
