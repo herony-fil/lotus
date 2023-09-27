@@ -1,6 +1,7 @@
 package paths
 
 import (
+	"strings"
 	"context"
 	"encoding/json"
 	"math/bits"
@@ -47,7 +48,7 @@ type Local struct {
 	localLk sync.RWMutex
 	groupID string
 	role    string
-
+	recoverDCMode bool
 	finalizeBandwidth string
 }
 
@@ -166,6 +167,11 @@ func NewLocal(ctx context.Context, ls LocalStorage, index SectorIndex, urls []st
 	l.finalizeBandwidth = os.Getenv("YOUZHOU_FINALIZE_BANDWIDTH")
 	if l.finalizeBandwidth != "" {
 		log.Warnf("Local use finalize bandwidth limit:%s", l.finalizeBandwidth)
+	}
+	l.recoverDCMode = false
+	if os.Getenv("YOUZHOU_RECOVERDC_MODE") == "true" {
+		// log.Warn("Miner sealing in recover DC mode")
+		l.recoverDCMode = true
 	}
 
 	return l, l.open(ctx)
@@ -827,7 +833,13 @@ func (st *Local) MoveStorage(ctx context.Context, s storiface.SectorRef, types s
 		if fileType&types == 0 {
 			continue
 		}
-
+		// recoverDCMode don't remove the unsealed
+		if st.recoverDCMode && fileType == storiface.FTUnsealed   {
+			log.Debugf("not moving %v(%d); recoverDCMode", s, fileType)
+			
+			continue
+		}
+		
 		sst, err := st.index.StorageInfo(ctx, storiface.ID(storiface.PathByType(srcIds, fileType)))
 		if err != nil {
 			return xerrors.Errorf("failed to get source storage info: %w", err)
