@@ -81,6 +81,8 @@ var fsmPlanners = map[SectorState]func(events []statemachine.Event, state *Secto
 	Packing: planOne(
 		on(SectorPacked{}, GetTicket),
 		on(SectorRedoPacked{}, GetTicket),
+		on(SectorTicket{}, PreCommit1),
+		
 	),
 	GetTicket: planOne(
 		on(SectorTicket{}, PreCommit1),
