@@ -135,6 +135,8 @@ type Sealing struct {
 	getConfig      dtypes.GetSealingConfigFunc
 	recoverMode    bool
 	sealingDisable bool
+	recoverDCMode    bool
+	
 }
 
 type openSector struct {
@@ -221,9 +223,14 @@ type pendingPiece struct {
 
 func New(mctx context.Context, api SealingAPI, fc config.MinerFeeConfig, events Events, maddr address.Address, ds datastore.Batching, sealer sealer.SectorManager, verif storiface.Verifier, prov storiface.Prover, pcp PreCommitPolicy, gc dtypes.GetSealingConfigFunc, journal journal.Journal, addrSel AddressSelector) *Sealing {
 	recoverMode := false
+	recoverDCMode := false 
 	if os.Getenv("YOUZHOU_RECOVER_MODE") == "true" {
 		log.Warn("Miner sealing in recover mode")
 		recoverMode = true
+	}
+	if os.Getenv("YOUZHOU_RECOVERDC_MODE") == "true" {
+		// log.Warn("Miner sealing in recover DC mode")
+		recoverDCMode = true
 	}
 	sealingDisable := os.Getenv("YOUZHOU_SEALING_DISABLE") == "true"
 	s := &Sealing{
@@ -266,6 +273,7 @@ func New(mctx context.Context, api SealingAPI, fc config.MinerFeeConfig, events 
 		},
 
 		recoverMode:    recoverMode,
+		recoverDCMode:    recoverDCMode,
 		sealingDisable: sealingDisable,
 	}
 
